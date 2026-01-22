@@ -19,12 +19,12 @@ final class GildedRose
         foreach ($this->items as $item) {
 
             $type = $this->typeOf($item);
-            
-            if ($type === 'sulfuras') {
+
+            if ($type === ItemType::Sulfuras) {
                 continue;
             }
 
-            $degradeAmount = ($type === 'conjured') ? 2 : 1;
+            $degradeAmount = ($type === ItemType::Conjured) ? 2 : 1;
 
             $this->updateQualityBeforeSellDate($item, $type, $degradeAmount);
 
@@ -36,14 +36,14 @@ final class GildedRose
         }
     }
 
-    private function updateQualityBeforeSellDate(Item $item, string $type, int $degradeAmount): void
+    private function updateQualityBeforeSellDate(Item $item, ItemType $type, int $degradeAmount): void
     {
         switch ($type) {
-            case 'brie':
+            case ItemType::Brie:
                 $this->increaseQuality($item, 1);
                 return;
 
-            case 'backstage':
+            case ItemType::Backstage:
                 $this->increaseQuality($item, 1);
 
                 if ($item->sellIn < 11) {
@@ -56,39 +56,39 @@ final class GildedRose
 
                 return;
 
-            case 'normal':
-            case 'conjured':
+            case ItemType::Normal:
+            case ItemType::Conjured:
             default:
                 $this->decreaseQuality($item, $degradeAmount);
                 return;
         }
     }
 
-    private function updateQualityAfterSellDate(Item $item, string $type, int $degradeAmount): void
+    private function updateQualityAfterSellDate(Item $item, ItemType $type, int $degradeAmount): void
     {
         switch ($type) {
-            case 'brie':
+            case ItemType::Brie:
                 $this->increaseQuality($item, 1);
                 return;
 
-            case 'backstage':
+            case ItemType::Backstage:
                 $item->quality = 0;
                 return;
 
-            case 'normal':
-            case 'conjured':
+            case ItemType::Normal:
+            case ItemType::Conjured:
             default:
                 $this->decreaseQuality($item, $degradeAmount);
                 return;
         }
     }
 
-    private function typeOf(Item $item): string
+    private function typeOf(Item $item): ItemType
     {
         $typeMapping = [
-            'Aged Brie' => 'brie',
-            'Backstage passes to a TAFKAL80ETC concert' => 'backstage',
-            'Sulfuras, Hand of Ragnaros' => 'sulfuras',
+            'Aged Brie' => ItemType::Brie,
+            'Backstage passes to a TAFKAL80ETC concert' => ItemType::Backstage,
+            'Sulfuras, Hand of Ragnaros' => ItemType::Sulfuras,
         ];
 
         if (isset($typeMapping[$item->name])) {
@@ -96,12 +96,11 @@ final class GildedRose
         }
 
         if (strpos($item->name, 'Conjured') !== false) {
-            return 'conjured';
+            return ItemType::Conjured;
         }
 
-        return 'normal';
+        return ItemType::Normal;
     }
-
 
     private function decreaseQuality(Item $item, int $amount): void
     {
@@ -117,9 +116,9 @@ final class GildedRose
     {
         return $item->sellIn < 0;
     }
+
     private function decreaseSellIn(Item $item): void
     {
         $item->sellIn -= 1;
     }
-
 }
