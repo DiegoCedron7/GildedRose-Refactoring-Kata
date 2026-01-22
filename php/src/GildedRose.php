@@ -17,51 +17,109 @@ final class GildedRose
     public function updateQuality(): void
     {
         foreach ($this->items as $item) {
-            if ($item->name != 'Aged Brie' and $item->name != 'Backstage passes to a TAFKAL80ETC concert') {
-                if ($item->quality > 0) {
-                    if ($item->name != 'Sulfuras, Hand of Ragnaros') {
-                        $item->quality = $item->quality - 1;
-                    }
-                }
-            } else {
-                if ($item->quality < 50) {
-                    $item->quality = $item->quality + 1;
-                    if ($item->name == 'Backstage passes to a TAFKAL80ETC concert') {
-                        if ($item->sellIn < 11) {
-                            if ($item->quality < 50) {
-                                $item->quality = $item->quality + 1;
-                            }
-                        }
-                        if ($item->sellIn < 6) {
-                            if ($item->quality < 50) {
-                                $item->quality = $item->quality + 1;
-                            }
-                        }
-                    }
-                }
+
+            $type = $this->typeOf($item);
+            
+            if ($type === 'sulfuras') {
+                continue;
             }
 
-            if ($item->name != 'Sulfuras, Hand of Ragnaros') {
-                $item->sellIn = $item->sellIn - 1;
-            }
+            $degradeAmount = ($type === 'conjured') ? 2 : 1;
 
-            if ($item->sellIn < 0) {
-                if ($item->name != 'Aged Brie') {
-                    if ($item->name != 'Backstage passes to a TAFKAL80ETC concert') {
-                        if ($item->quality > 0) {
-                            if ($item->name != 'Sulfuras, Hand of Ragnaros') {
-                                $item->quality = $item->quality - 1;
-                            }
-                        }
-                    } else {
-                        $item->quality = $item->quality - $item->quality;
-                    }
-                } else {
-                    if ($item->quality < 50) {
-                        $item->quality = $item->quality + 1;
-                    }
-                }
+            $this->updateQualityBeforeSellDate($item, $type, $degradeAmount);
+
+            $this->decreaseSellIn($item);
+
+            if ($this->isExpired($item)) {
+                $this->updateQualityAfterSellDate($item, $type, $degradeAmount);
             }
         }
     }
+
+    private function updateQualityBeforeSellDate(Item $item, string $type, int $degradeAmount): void
+    {
+        switch ($type) {
+            case 'brie':
+                $this->increaseQuality($item, 1);
+                return;
+
+            case 'backstage':
+                $this->increaseQuality($item, 1);
+
+                if ($item->sellIn < 11) {
+                    $this->increaseQuality($item, 1);
+                }
+
+                if ($item->sellIn < 6) {
+                    $this->increaseQuality($item, 1);
+                }
+
+                return;
+
+            case 'normal':
+            case 'conjured':
+            default:
+                $this->decreaseQuality($item, $degradeAmount);
+                return;
+        }
+    }
+
+    private function updateQualityAfterSellDate(Item $item, string $type, int $degradeAmount): void
+    {
+        switch ($type) {
+            case 'brie':
+                $this->increaseQuality($item, 1);
+                return;
+
+            case 'backstage':
+                $item->quality = 0;
+                return;
+
+            case 'normal':
+            case 'conjured':
+            default:
+                $this->decreaseQuality($item, $degradeAmount);
+                return;
+        }
+    }
+
+    private function typeOf(Item $item): string
+    {
+        $typeMapping = [
+            'Aged Brie' => 'brie',
+            'Backstage passes to a TAFKAL80ETC concert' => 'backstage',
+            'Sulfuras, Hand of Ragnaros' => 'sulfuras',
+        ];
+
+        if (isset($typeMapping[$item->name])) {
+            return $typeMapping[$item->name];
+        }
+
+        if (strpos($item->name, 'Conjured') !== false) {
+            return 'conjured';
+        }
+
+        return 'normal';
+    }
+
+
+    private function decreaseQuality(Item $item, int $amount): void
+    {
+        $item->quality = max(0, $item->quality - $amount);
+    }
+
+    private function increaseQuality(Item $item, int $amount): void
+    {
+        $item->quality = min(50, $item->quality + $amount);
+    }
+
+    private function isExpired(Item $item): bool
+    {
+        return $item->sellIn < 0;
+    }
+    private function decreaseSellIn(Item $item): void
+    {
+        $item->sellIn -= 1;
+    }
+
 }
