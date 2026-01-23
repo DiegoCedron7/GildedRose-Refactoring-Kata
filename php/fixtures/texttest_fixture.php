@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use GildedRose\GildedRose;
-use GildedRose\Item;
+use GildedRose\Application\GildedRose;
+use GildedRose\Domain\Item;
+use GildedRose\Update\Updaters\AgedBrieUpdater;
+use GildedRose\Update\Updaters\BackstageUpdater;
+use GildedRose\Update\Updaters\ConjuredUpdater;
+use GildedRose\Update\Updaters\NormalUpdater;
+use GildedRose\Update\Updaters\SulfurasUpdater;
+use GildedRose\Update\UpdaterResolver;
+
 
 echo 'OMGHAI!' . PHP_EOL;
 
@@ -18,11 +25,17 @@ $items = [
     new Item('Backstage passes to a TAFKAL80ETC concert', 15, 20),
     new Item('Backstage passes to a TAFKAL80ETC concert', 10, 49),
     new Item('Backstage passes to a TAFKAL80ETC concert', 5, 49),
-    // this conjured item does not work properly yet
     new Item('Conjured Mana Cake', 3, 6),
 ];
 
-$app = new GildedRose($items);
+$resolver = new UpdaterResolver([
+    new SulfurasUpdater(),
+    new AgedBrieUpdater(),
+    new BackstageUpdater(),
+    new ConjuredUpdater(),
+]);
+
+$app = new GildedRose($items, $resolver);
 
 $days = 2;
 if ((is_countable($argv) ? count($argv) : 0) > 1) {

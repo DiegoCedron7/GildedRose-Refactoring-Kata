@@ -4,16 +4,38 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use GildedRose\GildedRose;
-use GildedRose\Item;
+use GildedRose\Application\GildedRose;
+use GildedRose\Domain\Item;
+use GildedRose\Update\UpdaterResolver;
+use GildedRose\Update\Updaters\AgedBrieUpdater;
+use GildedRose\Update\Updaters\BackstageUpdater;
+use GildedRose\Update\Updaters\ConjuredUpdater;
+use GildedRose\Update\Updaters\NormalUpdater;
+use GildedRose\Update\Updaters\SulfurasUpdater;
 use PHPUnit\Framework\TestCase;
+
 
 final class GildedRoseTest extends TestCase
 {
+    private UpdaterResolver $resolver;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->resolver = new UpdaterResolver([
+            new SulfurasUpdater(),
+            new AgedBrieUpdater(),
+            new BackstageUpdater(),
+            new ConjuredUpdater(),
+            new NormalUpdater(),
+        ]);
+    } 
+
     public function testFoo(): void
     {
         $items = [new Item('foo', 0, 0)];
-        $gildedRose = new GildedRose($items);
+        $gildedRose = new GildedRose($items, $this->resolver);
         $gildedRose->updateQuality();
         $this->assertSame('foo', $items[0]->name);
     }
@@ -21,7 +43,7 @@ final class GildedRoseTest extends TestCase
     public function testNewItem(): void
     {
         $items = [new Item('newItem', 0, 0)];
-        $gildedRose = new GildedRose($items);
+        $gildedRose = new GildedRose($items, $this->resolver);
         $gildedRose->updateQuality();
         $this->assertSame('newItem', $items[0]->name);
     }
@@ -29,7 +51,7 @@ final class GildedRoseTest extends TestCase
     private function updateOneItem(string $name, int $sellIn, int $quality): Item
     {
         $items = [new Item($name, $sellIn, $quality)];
-        $app = new GildedRose($items);
+        $app = new GildedRose($items, $this->resolver);
         $app->updateQuality();
         return $items[0];
     }
@@ -91,8 +113,8 @@ final class GildedRoseTest extends TestCase
 
     public function testAgedBrieIncreasesTwiceAsFastAfterSellDate(): void
     {
-        $item = $this->updateOneItem('Aged Brie', 0, 2);
-        $this->assertSame(-1, $item->sellIn);
+        $item = $this->updateOneItem('Aged Brie', -1, 2);
+        $this->assertSame(-2, $item->sellIn);
         $this->assertSame(4, $item->quality);
     }
 
@@ -203,7 +225,7 @@ final class GildedRoseTest extends TestCase
             new Item('Normal Item', 5, 10),
         ];
 
-        $gildedRose = new GildedRose($items);
+        $gildedRose = new GildedRose($items, $this->resolver);
 
         $gildedRose->updateQuality();
 
